@@ -1,0 +1,324 @@
+let mut cpu = Cpu::new();
+    let mut display = Display::new();
+    let mut keypad = Keypad::new();
+
+    // Run the full CPU test
+    cpu.run_test(&mut display, &mut keypad);
+
+pub fn run_test(&mut self, display: &mut crate::display::Display, keypad: &mut crate::keypad::Keypad) {
+        println!("=== Starting Full CPU Test ===");
+
+        // 6XNN - SetVxToByte
+        self.execute_instruction(Instruction::SetVxToByte(0, 0x42), keypad, display);
+        println!("V0 (6XNN) = {:02X}", self.get_register(0));
+
+        // 7XNN - AddByteToVx
+        self.execute_instruction(Instruction::AddByteToVx(0, 0x10), keypad, display);
+        println!("V0 (7XNN) = {:02X}", self.get_register(0));
+
+        // 8XY0 - SetVxToVy
+        self.execute_instruction(Instruction::SetVxToByte(1, 0x55), keypad, display);
+        self.execute_instruction(Instruction::SetVxToVy(0, 1), keypad, display);
+        println!("V0 (8XY0) = {:02X}", self.get_register(0));
+
+        // 8XY1 - SetVxToVxOrVy
+        self.execute_instruction(Instruction::SetVxToByte(2, 0x0F), keypad, display);
+        self.execute_instruction(Instruction::SetVxToVxOrVy(0, 2), keypad, display);
+        println!("V0 (8XY1 OR) = {:02X}", self.get_register(0));
+
+        // 8XY2 - AND
+        self.execute_instruction(Instruction::SetVxToByte(2, 0xF0), keypad, display);
+        self.execute_instruction(Instruction::SetVxToVxAndVy(0, 2), keypad, display);
+        println!("V0 (8XY2 AND) = {:02X}", self.get_register(0));
+
+        // 8XY3 - XOR
+        self.execute_instruction(Instruction::SetVxToByte(2, 0xFF), keypad, display);
+        self.execute_instruction(Instruction::SetVxToVxXorVy(0, 2), keypad, display);
+        println!("V0 (8XY3 XOR) = {:02X}", self.get_register(0));
+
+        // 8XY4 - Add with carry
+        self.execute_instruction(Instruction::SetVxToByte(0, 0x80), keypad, display);
+        self.execute_instruction(Instruction::SetVxToByte(2, 0x90), keypad, display);
+        self.execute_instruction(Instruction::AddVyToVxWithCarry(0, 2), keypad, display);
+        println!("V0 (8XY4 ADD) = {:02X}, VF = {}", self.get_register(0), self.get_register(0xF));
+
+        // 8XY5 - Subtract with borrow
+        self.execute_instruction(Instruction::SetVxToByte(0, 0x90), keypad, display);
+        self.execute_instruction(Instruction::SetVxToByte(2, 0x10), keypad, display);
+        self.execute_instruction(Instruction::SubtractVyFromVxWithBorrow(0, 2), keypad, display);
+        println!("V0 (8XY5 SUB) = {:02X}, VF = {}", self.get_register(0), self.get_register(0xF));
+
+        // 8XY6 - Shift right
+        self.execute_instruction(Instruction::SetVxToByte(2, 0x03), keypad, display);
+        self.execute_instruction(Instruction::ShiftVxRightByOne(0, 2), keypad, display);
+        println!("V0 (8XY6 SHR) = {:02X}, VF = {}", self.get_register(0), self.get_register(0xF));
+
+        // 8XY7 - Vy - Vx
+        self.execute_instruction(Instruction::SetVxToByte(0, 0x10), keypad, display);
+        self.execute_instruction(Instruction::SetVxToByte(2, 0x20), keypad, display);
+        self.execute_instruction(Instruction::SetVxToVyMinusVx(0, 2), keypad, display);
+        println!("V0 (8XY7 SUB) = {:02X}, VF = {}", self.get_register(0), self.get_register(0xF));
+
+        // 8XYE - Shift left
+        self.execute_instruction(Instruction::ShiftVxLeftByOne(0, 2), keypad, display);
+        println!("V0 (8XYE SHL) = {:02X}, VF = {}", self.get_register(0), self.get_register(0xF));
+
+        // 3XNN / 4XNN / 5XY0 / 9XY0 - skips
+        self.execute_instruction(Instruction::SetVxToByte(0, 0x10), keypad, display);
+        let pc_before = self.pc;
+        self.execute_instruction(Instruction::SkipIfVxEqualsByte(0, 0x10), keypad, display);
+        println!("PC after 3XNN skip: {}", self.pc);
+        self.pc = pc_before;
+        self.execute_instruction(Instruction::SkipIfVxNotEqualsByte(0, 0x11), keypad, display);
+        println!("PC after 4XNN skip: {}", self.pc);
+        self.execute_instruction(Instruction::SetVxToByte(1, 0x10), keypad, display);
+        self.execute_instruction(Instruction::SkipIfVxEqualsVy(0, 1), keypad, display);
+        println!("PC after 5XY0 skip: {}", self.pc);
+        self.execute_instruction(Instruction::SkipIfVxNotEqualsVy(0, 1), keypad, display);
+        println!("PC after 9XY0 skip: {}", self.pc);
+
+        // ANNN / BNNN
+        self.execute_instruction(Instruction::SetIToAddress(0x300), keypad, display);
+        println!("I after ANNN = {:03X}", self.i);
+        self.execute_instruction(Instruction::JumpToV0PlusAddress(0x200), keypad, display);
+        println!("PC after BNNN = {:03X}", self.pc);
+
+        // CXNN - Random
+        self.execute_instruction(Instruction::SetVxToRandomAndByte(0, 0xFF), keypad, display);
+        println!("V0 after CXNN random = {:02X}", self.get_register(0));
+
+        // DXYN - draw sprite
+        self.i = 0x50;
+        self.execute_instruction(Instruction::DrawSprite(0, 0, 5), keypad, display);
+        println!("Display top-left pixel = {}", display.get_pixel(0, 0));
+
+        // EX9E / EXA1 - keypad
+        keypad.press(1);
+        self.execute_instruction(Instruction::SkipIfKeyInVxPressed(1), keypad, display);
+        self.execute_instruction(Instruction::SkipIfKeyInVxNotPressed(0), keypad, display);
+        keypad.release(1);
+
+        // FX07 / FX15 / FX18
+        self.delay_timer = 0xAA;
+        self.execute_instruction(Instruction::SetVxToDelayTimer(0), keypad, display);
+        println!("V0 after FX07 (DT) = {:02X}", self.get_register(0));
+        self.execute_instruction(Instruction::SetDelayTimerToVx(1), keypad, display);
+        self.execute_instruction(Instruction::SetSoundTimerToVx(1), keypad, display);
+        println!("DT after FX15 = {}, ST after FX18 = {}", self.delay_timer, self.sound_timer);
+
+        // FX1E - Add Vx to I
+        self.i = 0x100;
+        self.execute_instruction(Instruction::AddVxToI(0), keypad, display);
+        println!("I after FX1E = {:03X}", self.i);
+
+        // FX29 - set I to sprite address
+        self.execute_instruction(Instruction::SetVxToByte(0, 0xA), keypad, display);
+        self.execute_instruction(Instruction::SetIToSpriteAddressForDigitVx(0), keypad, display);
+        println!("I after FX29 = {:03X}", self.i);
+
+        // FX33 - BCD
+        self.execute_instruction(Instruction::SetVxToByte(0, 123), keypad, display);
+        self.execute_instruction(Instruction::StoreBcdOfVxAtI(0), keypad, display);
+        println!("Memory BCD = {}, {}, {}", self.mem.read_byte(self.i as usize), self.mem.read_byte(self.i as usize+1), self.mem.read_byte(self.i as usize+2));
+
+        // FX55 / FX65 - Store/read registers
+        for i in 0..=5 {
+            self.set_register(i, i as u8 * 10);
+        }
+        self.execute_instruction(Instruction::StoreRegistersV0ThroughVxInMemory(5), keypad, display);
+        for i in 0..=5 {
+            self.set_register(i, 0);
+        }
+        self.execute_instruction(Instruction::ReadRegistersV0ThroughVxFromMemory(5), keypad, display);
+        for i in 0..=5 {
+            println!("V{} after FX65 = {}", i, self.get_register(i));
+        }
+
+        // 00E0 / 00EE
+        display.set_pixel(0, 0, true);
+        self.execute_instruction(Instruction::ClearDisplay, keypad, display);
+        println!("Top-left pixel after 00E0 = {}", display.get_pixel(0, 0));
+
+        // Call/Return
+        self.pc = 0x200;
+        self.execute_instruction(Instruction::CallSubroutine(0x300), keypad, display);
+        println!("PC after 2NNN call = {:03X}, SP = {}", self.pc, self.sp);
+        self.execute_instruction(Instruction::ReturnFromSubroutine, keypad, display);
+        println!("PC after 00EE return = {:03X}, SP = {}", self.pc, self.sp);
+
+        println!("=== Full CPU Test Completed ===");
+    }
+
+let mut cpu = Cpu::new();
+
+    // Run the sound test
+    cpu.test_sound();
+
+pub fn test_sound(&mut self) {
+        println!("=== Starting Sound Test ===");
+
+        // Set sound timer to 60 ticks (~1 second at 60Hz)
+        self.sound_timer = 60;
+
+        // 60Hz tick simulation
+        let tick_duration = Duration::from_millis(16);
+        let mut last_tick = Instant::now();
+
+        while self.sound_timer > 0 {
+            if last_tick.elapsed() >= tick_duration {
+                // decrement sound timer
+                if self.sound_timer > 0 {
+                    self.sound_timer -= 1;
+                }
+
+                // play or pause tone
+                if self.sound_timer > 0 {
+                    self.sink.play();
+                } else {
+                    self.sink.pause();
+                }
+
+                println!("Sound timer: {}", self.sound_timer);
+
+                last_tick = Instant::now();
+            }
+
+            // Sleep briefly to avoid busy waiting
+            sleep(Duration::from_millis(16));
+        }
+
+        println!("=== Sound Test Completed ===");
+    }
+
+let mut cpu = Cpu::new();
+    let mut keypad = Keypad::new();
+    let mut display = Display::new();
+    cpu.debug_test_f3(&mut keypad,&mut display);
+
+pub fn debug_test_f3(&mut self, keypad: &mut crate::keypad::Keypad, display: &mut crate::display::Display) {
+        println!("=== Starting Corax89 F3 Debug Test ===");
+
+        // Example setup similar to how the ROM might prepare registers
+        self.set_register(0x0, 0x05);
+        self.set_register(0x1, 0x03);
+        self.set_register(0x2, 0x80);
+        self.set_register(0x3, 0xFF);
+
+        println!("Initial State:");
+        self.print_registers();
+
+        // Simulate each opcode used in the F3 section
+        let test_opcodes = vec![
+            (0x8014, "ADD V0, V1"),  // 8XY4 - test carry
+            (0x8015, "SUB V0, V1"),  // 8XY5 - test borrow
+            (0x8017, "SUBN V0, V1"), // 8XY7 - test reverse borrow
+            (0x8216, "SHR V2 {, V1}"), // 8XY6 - shift right
+            (0x821E, "SHL V2 {, V1}"), // 8XYE - shift left
+        ];
+
+        for (opcode, desc) in test_opcodes {
+            println!("\n-- Executing: {} (0x{:04X}) --", desc, opcode);
+            let instr = Cpu::decode_instruction(opcode);
+            self.execute_instruction(instr, keypad, display);
+            self.print_registers();
+        }
+
+        println!("\n=== Debug Test Complete ===");
+    }
+
+    fn print_registers(&self) {
+        for i in 0..=0xF {
+            print!("V{:X}:{:02X} ", i, self.get_register(i));
+        }
+        println!(" | PC:{:04X} I:{:04X}", self.pc, self.i);
+    }
+
+let mut cpu = Cpu::new();
+    let mut keypad = Keypad::new();
+    let mut display = Display::new();
+    cpu.debug_until_pc(0x0206, &mut keypad,&mut display);
+
+pub fn debug_until_pc(&mut self, stop_pc: u16, keypad: &mut crate::keypad::Keypad, display: &mut crate::display::Display) {
+        
+        let data = std::fs::read("test_opcode.ch8").expect("Failed to read ROM file");
+        for (i, &byte) in data.iter().enumerate() {
+            self.mem.write_byte(0x200 + i, byte);
+        }
+        self.pc = 0x200;
+        println!("=== Starting Step Debug Until PC {:04X} ===", stop_pc);
+
+        let mut step = 0;
+        let max_step = 100;
+        loop {
+            // Print full register + PC + I state before executing
+            print!("PC:{:04X} I:{:04X} | ", self.pc, self.i);
+            for r in 0..=0xF {
+                print!("V{:X}:{:02X} ", r, self.get_register(r));
+            }
+            println!();
+
+            // Break before executing the opcode if we’ve hit the stop address
+            if self.pc == stop_pc || step >= max_step {
+                println!("--- Reached stop PC {:04X} ---", stop_pc);
+                break;
+            }
+
+            // Fetch and decode
+            let opcode = self.fetch_instruction();
+            let instr = Self::decode_instruction(opcode);
+
+            println!("-- Executing: {:?} (0x{:04X}) --", instr, opcode);
+
+            // Execute
+            self.execute_instruction(instr, keypad, display);
+            step += 1;
+        }
+
+        println!("=== Debug Stop ===");
+    }
+
+let mut cpu = Cpu::new();
+    let mut keypad = Keypad::new();
+    let mut display = Display::new();
+    cpu.test_draw_collision(&mut display, &mut keypad);
+
+pub fn test_draw_collision(&mut self, display: &mut crate::display::Display, keypad: &mut crate::keypad::Keypad) {
+        println!("=== Starting Draw Collision Test ===");
+
+        // Clear display first
+        display.clear();
+
+        // Place a single pixel on the screen
+        display.set_pixel(0, 0, true);
+
+        // Load a sprite into memory at I
+        // Sprite: 1000_0000 -> only top-left pixel set
+        let sprite_addr = 0x300;
+        self.mem.write_byte(sprite_addr, 0b1000_0000);
+        self.i = sprite_addr as u16;
+
+        // Set registers V0,V1 to position (0,0)
+        self.set_register(0, 0); // V0 = X
+        self.set_register(1, 0); // V1 = Y
+
+        // Execute draw
+        let instr = crate::cpu::Instruction::DrawSprite(0, 1, 1); // Draw 1 row
+        self.execute_instruction(instr, keypad, display);
+
+        // Check VF
+        let vf = self.get_register(0xF);
+        println!("VF after overlapping sprite: {}", vf);
+        assert_eq!(vf, 1, "Collision not detected correctly");
+
+        // Now draw somewhere else, no collision
+        self.set_register(0, 2); // X = 2
+        self.set_register(1, 2); // Y = 2
+        self.i = sprite_addr as u16;
+        let instr2 = crate::cpu::Instruction::DrawSprite(0, 1, 1);
+        self.execute_instruction(instr2, keypad, display);
+        let vf2 = self.get_register(0xF);
+        println!("VF after non-overlapping sprite: {}", vf2);
+        assert_eq!(vf2, 0, "False collision detected");
+
+        println!("=== Draw Collision Test Complete ===\n");
+    }
