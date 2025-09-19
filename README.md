@@ -16,9 +16,9 @@ RustChip is a simple Chip-8 emulator written in Rust, capable of running classic
 
 ## Screenshots
 
-<img src="images/pong.jpg" alt="Main Pong game screen showing ball and paddles" width="640">
+<img src="images/pong.JPG" alt="Main Pong game screen showing ball and paddles" width="640">
 
-<img src="images/invaders.jpg" alt="Invaders start screen" width="640">
+<img src="images/invaders.JPG" alt="Invaders start screen" width="640">
 
 ---
 
