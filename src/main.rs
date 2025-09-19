@@ -22,8 +22,12 @@ fn main() {
     println!("Initializing app and peripherals...");
     let game_loop = EventLoop::new().unwrap();
     let mut game_app = App::new();
+
+    let args: Vec<String> = std::env::args().collect();
+    let rom_file = args.get(1).map(|s| s.as_str()).unwrap_or("PONG.ch8");
+
     println!("Loading rom...");
-    game_app.load_rom("PONG.ch8", 0x200);
+    game_app.load_rom(rom_file, 0x200);
 
     start_cpu_thread(Arc::clone(&game_app.cpu), Arc::clone(&game_app.display), Arc::clone(&game_app.keypad));
 
