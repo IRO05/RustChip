@@ -37,25 +37,25 @@ Clone the repository:
 ```bash
 git clone https://github.com/IRO05/RustChip.git
 cd RustChip
-'''
+```
 
 Build the project:
 
-'''bash
+```bash
 cargo build --release
-'''
+```
 
 Run the emulator (default game pong):
 
-'''bash
+```bash
 cargo run --release
-'''
+```
 
 Run the emulator with other roms:
 
-'''bash
+```bash
 cargo run --release your_rom.ch8
-'''
+```
 
 ---
 
