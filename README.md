@@ -1,6 +1,6 @@
 # RustChip - Chip-8 Emulator in Rust
 
-RustChip is a simple Chip-8 emulator written in Rust, capable of running classic Chip-8 games such as Pong. It features a 64×32 monochrome display, a 16-key keypad, and a fully implemented Chip-8 CPU with timers.
+RustChip is a simple Chip-8 emulator written in Rust, capable of running classic Chip-8 games such as Pong. It features a 64×32 two-color display, a 16-key keypad, and a fully implemented Chip-8 CPU with timers.
 
 ---
 
